@@ -86,3 +86,30 @@ class ConvLayer(Layer):
                 y_out += 1
 
         return out
+
+
+class Conv2D(ConvLayer):
+    """2D Convolutional layer"""
+
+    def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
+                 bias_initializer: int, stride: int):
+        """
+        :param filters_amount: layer's amount of filters
+        :param filter_size: the size of the kernal
+        :param activation: the used activations function
+        :param filter_initializer: the used filter initializer function
+        :param bias_initializer: the used bias initializer function
+        :param stride: the stride of the convolution
+        """
+        super().__init__(filters_amount=filters_amount,
+                         filter_size=filter_size,
+                         activation=activation,
+                         stride=stride,
+                         filter_initializer=filter_initializer,
+                         bias_initializer=bias_initializer,
+                         input_d=2
+                         )
+
+    def run(self, x):
+        """Convolves the filters over 'x' """
+        super().run(x)
