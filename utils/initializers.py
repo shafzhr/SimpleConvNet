@@ -38,3 +38,9 @@ def ones(shape):
     :return: array (it's shape=param shape) with initialized values using 'ones' initializer
     """
     return np.ones(shape=shape)
+
+
+WEIGHT_FUNCTIONS = {"he_normal": lambda shape: he_normal(shape),
+                    "glorot_uniform": lambda shape: glorot_uniform(shape)}
+BIAS_FUNCTIONS = {"zeros": lambda shape: zeros(shape),
+                  "ones": lambda shape: ones(shape)}
