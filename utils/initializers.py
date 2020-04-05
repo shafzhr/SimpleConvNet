@@ -11,6 +11,7 @@ def he_normal(shape):
     """
     fan_in = np.prod(shape[1:])
     scale = 2 / fan_in
+    # constant from scipy.stats.truncnorm.std(a=-2, b=2, loc=0., scale=1.)
     stddev = np.sqrt(scale) / .87962566103423978
     return np.random.normal(loc=0, scale=stddev, size=shape)
 
