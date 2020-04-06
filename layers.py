@@ -16,7 +16,23 @@ class Layer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def run(self, x):
         """feed an input 'x' through the layer"""
-        raise NotImplementedError('users must define "run" to use this base class')
+        pass
+
+    @abc.abstractmethod
+    def initialize_weights(self, shape):
+        """
+        Initializing weights
+        :param shape: wanted output's shape
+        """
+        pass
+
+    @abc.abstractmethod
+    def initialize_bias(self, shape):
+        """
+        Initializing biases
+        :param shape: wanted output's shape
+        """
+        pass
 
     @abc.abstractmethod
     def activation(self, x):
@@ -45,29 +61,30 @@ class ConvLayer(Layer):
         self.activation_name = activation
         self.stride = stride
         self.filter_initializer = filter_initializer
-        self.filters = self.initialize_filters((filters_amount, input_d, *filter_size))
+        self.filters = self.initialize_weights((filters_amount, input_d, *filter_size))
         self.bias_initializer = bias_initializer
         self.bias = self.initialize_bias((filters_amount, input_d, *filter_size))
 
-    def initialize_filters(self, shape):
+    def initialize_weights(self, shape):
         """
         Initializing filters
-        :param shape:
-        :return:
+        :param shape: Tuple, wanted output's shape(filters_amount, depth, width, height)
+        :return: numpy array of weights(it's shape= the given shape)
         """
         if self.filter_initializer not in WEIGHT_FUNCTIONS.keys():
             raise ValueError("Filter initializer name has to be in {}".format(str(WEIGHT_FUNCTIONS.keys())))
 
         return WEIGHT_FUNCTIONS[self.filter_initializer](shape)
 
-    def initialize_bias(self, shpae):
+    def initialize_bias(self, shape):
         """
         Initializing biases
+        :param shape: Tuple, wanted output's shape(biases_amount, depth, width, height)
         """
         if self.bias_initializer not in BIAS_FUNCTIONS.keys():
             raise ValueError("Bias initializer name has to be in {}".format(str(BIAS_FUNCTIONS.keys())))
 
-        return BIAS_FUNCTIONS[self.bias_initializer](shpae)
+        return BIAS_FUNCTIONS[self.bias_initializer](shape)
 
     def activation(self, x):
         """
