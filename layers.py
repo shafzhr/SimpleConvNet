@@ -18,6 +18,14 @@ class Layer(metaclass=abc.ABCMeta):
         """feed an input 'x' through the layer"""
         raise NotImplementedError('users must define "run" to use this base class')
 
+    @abc.abstractmethod
+    def activation(self, x):
+        """
+        use the layer's activation function over input 'x'
+        :param x: input
+        """
+        pass
+
 
 class ConvLayer(Layer):
     """Convolutional layer"""
@@ -34,7 +42,7 @@ class ConvLayer(Layer):
         :param input_d: input's dimension
         """
         self.filter_size = filter_size
-        self.activation = activation
+        self.activation_name = activation
         self.stride = stride
         self.filter_initializer = filter_initializer
         self.filters = self.initialize_filters((filters_amount, input_d, *filter_size))
@@ -60,6 +68,17 @@ class ConvLayer(Layer):
             raise ValueError("Bias initializer name has to be in {}".format(str(BIAS_FUNCTIONS.keys())))
 
         return BIAS_FUNCTIONS[self.bias_initializer](shpae)
+
+    def activation(self, x):
+        """
+        use the layer's activation function over input 'x'
+        :param x: input
+        :return nothing as the input array is passed by reference
+        """
+        if self.activation_name not in ACTIVATION_FUNCTIONS.keys():
+            raise ValueError("Activation name has to be in {}".format(str(ACTIVATION_FUNCTIONS.keys())))
+
+        ACTIVATION_FUNCTIONS[self.activation_name](x)
 
     def run(self, x):
         """Convolves the filters over 'x' """
