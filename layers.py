@@ -7,6 +7,7 @@ from typing import (
 import abc
 import numpy as np
 from utils.initializers import WEIGHT_FUNCTIONS, BIAS_FUNCTIONS
+from utils.activations import ACTIVATION_FUNCTIONS
 
 
 class Layer(metaclass=abc.ABCMeta):
