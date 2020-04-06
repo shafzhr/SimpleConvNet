@@ -40,7 +40,7 @@ def ones(shape):
     return np.ones(shape=shape)
 
 
-WEIGHT_FUNCTIONS = {"he_normal": lambda shape: he_normal(shape),
-                    "glorot_uniform": lambda shape: glorot_uniform(shape)}
-BIAS_FUNCTIONS = {"zeros": lambda shape: zeros(shape),
-                  "ones": lambda shape: ones(shape)}
+WEIGHT_FUNCTIONS = {"he_normal": he_normal,
+                    "glorot_uniform": glorot_uniform}
+BIAS_FUNCTIONS = {"zeros": zeros,
+                  "ones": ones}
