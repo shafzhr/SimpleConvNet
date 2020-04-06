@@ -112,4 +112,4 @@ class Conv2D(ConvLayer):
 
     def run(self, x):
         """Convolves the filters over 'x' """
-        super().run(x)
+        return super().run(x)
