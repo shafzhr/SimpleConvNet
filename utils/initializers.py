@@ -21,7 +21,10 @@ def glorot_uniform(shape):
     :param shape: tuple with the shape of the wanted output (filters_amount, depth, height, width)
     :return: array (it's shape=param shape) with initialized values using 'glorot uniform' initializer
     """
-    pass
+    fan_in, fan_out = _calc_fans(shape)
+    scale = 1. / ((fan_in + fan_out) / 2.)
+    limit = np.sqrt(3.0 * scale)
+    return np.random.uniform(low=-limit, high=limit, size=shape)
 
 
 def zeros(shape):
@@ -38,6 +41,20 @@ def ones(shape):
     :return: array (it's shape=param shape) with initialized values using 'ones' initializer
     """
     return np.ones(shape=shape)
+
+
+def _calc_fans(shape):
+    """
+    :param shape: tuple with the shape(4D - for example, filters, depth, width, height)
+    :return: (fan_in, fan_out)
+    """
+    if len(shape) != 4:
+        raise ValueError("Incompatible shape")
+
+    k_size = np.prod(shape[2:])
+    fan_in = k_size * shape[1]
+    fan_out = k_size * shape[0]
+    return fan_in, fan_out
 
 
 WEIGHT_FUNCTIONS = {"he_normal": he_normal,
