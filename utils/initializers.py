@@ -9,7 +9,7 @@ def he_normal(shape):
     :param shape: tuple with the shape of the wanted output (filters_amount, depth, height, width)
     :return: array (it's shape=param shape) with initialized values using 'he normal' initializer
     """
-    fan_in = np.prod(shape[1:])
+    fan_in, _ = _calc_fans(shape)
     scale = 2 / fan_in
     # constant from scipy.stats.truncnorm.std(a=-2, b=2, loc=0., scale=1.)
     stddev = np.sqrt(scale) / .87962566103423978
