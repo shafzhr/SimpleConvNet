@@ -13,6 +13,14 @@ from ..utils.activations import ACTIVATION_FUNCTIONS
 class ConvLayer(Layer):
     """Convolutional layer"""
 
+    @property
+    def has_weights(self):
+        return True
+
+    @property
+    def has_bias(self):
+        return True
+
     def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
                  bias_initializer: int, stride: int, input_d: int, **kw):
         """
