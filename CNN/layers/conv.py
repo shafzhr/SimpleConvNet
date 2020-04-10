@@ -30,7 +30,7 @@ class ConvLayer(Layer):
         self.filter_initializer = filter_initializer
         self.filters = self.initialize_weights((filters_amount, input_d, *filter_size))
         self.bias_initializer = bias_initializer
-        self.bias = self.initialize_bias((filters_amount, input_d, *filter_size))
+        self.bias = self.initialize_bias((filters_amount, 1))
 
     def initialize_weights(self, shape):
         """
