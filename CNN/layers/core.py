@@ -27,9 +27,6 @@ class Dropout(Layer):
 
         self.rate = rate
 
-    def backprop(self):
-        pass
-
     def run(self, x):
         """
         Applies dropout on `x`
@@ -38,6 +35,9 @@ class Dropout(Layer):
         shape = x.shape
         noise = np.random.choice([0, 1], shape, replace=True, p=[self.rate, 1 - self.rate])
         return x * noise / (1 - self.rate)
+
+    def backprop(self, dA):
+        pass
 
 
 class Flattening(Layer):
@@ -60,5 +60,5 @@ class Flattening(Layer):
         """
         return x.flatten()
 
-    def backprop(self):
+    def backprop(self, dA):
         pass

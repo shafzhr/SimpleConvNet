@@ -48,5 +48,5 @@ class MaxPooling2D(Layer):
                 y_out += 1
         return out
 
-    def backprop(self):
+    def backprop(self, dA):
         pass

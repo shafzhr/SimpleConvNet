@@ -31,7 +31,7 @@ class Layer(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def backprop(self):
+    def backprop(self, dA):
         """
         Back propagate
         """

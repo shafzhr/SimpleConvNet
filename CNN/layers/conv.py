@@ -99,7 +99,7 @@ class ConvLayer(Layer):
 
         return out
 
-    def backprop(self):
+    def backprop(self, dA):
         pass
 
 
