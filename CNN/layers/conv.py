@@ -99,6 +99,9 @@ class ConvLayer(Layer):
 
         return out
 
+    def backprop(self):
+        pass
+
 
 class Conv2D(ConvLayer):
     """2D Convolutional layer"""
@@ -121,7 +124,3 @@ class Conv2D(ConvLayer):
                          bias_initializer=bias_initializer,
                          input_d=2
                          )
-
-    def run(self, x):
-        """Convolves the filters over 'x' """
-        return super().run(x)

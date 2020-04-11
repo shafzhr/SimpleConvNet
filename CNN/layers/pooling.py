@@ -47,3 +47,6 @@ class MaxPooling2D(Layer):
                 curr_y += self.stride
                 y_out += 1
         return out
+
+    def backprop(self):
+        pass

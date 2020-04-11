@@ -27,6 +27,9 @@ class Dropout(Layer):
 
         self.rate = rate
 
+    def backprop(self):
+        pass
+
     def run(self, x):
         """
         Applies dropout on `x`
@@ -56,3 +59,6 @@ class Flattening(Layer):
         :param x: input to flatten
         """
         return x.flatten()
+
+    def backprop(self):
+        pass
