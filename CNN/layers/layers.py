@@ -25,5 +25,14 @@ class Layer(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def run(self, x):
-        """feed an input 'x' through the layer"""
+        """
+        feed an input 'x' through the layer
+        """
+        pass
+
+    @abc.abstractmethod
+    def backprop(self):
+        """
+        Back propagate
+        """
         pass
