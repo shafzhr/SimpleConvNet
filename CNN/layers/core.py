@@ -10,7 +10,7 @@ class Dropout(Layer):
     Dropout layer
     """
 
-    def __init__(self, rate):
+    def __init__(self, rate: float):
         """
         :param rate: drop rate
         """
@@ -37,12 +37,22 @@ class Flattening(Layer):
     Flattening layer
     """
 
+    def __init__(self):
+        self.shape = ()
+
     def run(self, x):
         """
         Flattening array
         :param x: input to flatten
         """
-        return x.flatten()
+        self.shape = x.shape
+        return x.reshape((np.prod(x.shape), 1))
 
-    def backprop(self, dA):
-        pass
+    def backprop(self, dA_prev):
+        """
+        Back propagation in a flattening layer
+        Reshapes the input to the same shape as the previous layer's output
+        :param dA_prev: derivative of the previous layer(when going backwards)
+        :return:
+        """
+        return dA_prev.reshape(self.shape)
