@@ -25,13 +25,15 @@ class ConvLayer(Layer):
                  bias_initializer: int, stride: int, input_d: int, **kw):
         """
         :param filters_amount: layer's amount of filters
-        :param filter_size: the size of the kernal
+        :param filter_size: the size of the kernal (height, width)
         :param activation: the used activations function
         :param filter_initializer: the used filter initializer function
         :param bias_initializer: the used bias initializer function
         :param stride: the stride of the convolution
         :param input_d: input's dimension
         """
+        if len(filter_size) != 2:
+            raise ValueError("Filter size has to be a Tuple of 2 elements(height, width)")
         self.filter_size = filter_size
         self.activation_name = activation
         self.stride = stride
@@ -39,6 +41,8 @@ class ConvLayer(Layer):
         self.filters = self.initialize_weights((filters_amount, input_d, *filter_size))
         self.bias_initializer = bias_initializer
         self.bias = self.initialize_bias((filters_amount, 1))
+        self.cache = {}
+        self.grads = {}
 
     def initialize_weights(self, shape):
         """
@@ -74,6 +78,8 @@ class ConvLayer(Layer):
 
     def run(self, x):
         """Convolves the filters over 'x' """
+        self.cache['X'] = x
+
         n_filt, dim_filt, size_filt, _ = self.filters.shape
         dim_img, size_img, _ = x.shape
 
@@ -99,8 +105,45 @@ class ConvLayer(Layer):
 
         return out
 
-    def backprop(self, dA):
-        pass
+    def backprop(self, dA_prev):
+        """
+        Back Propagation in a convolutional layer.
+        calculating this layer's dA using the chain rule.
+        For more info:
+        https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e and:
+        https://becominghuman.ai/back-propagation-in-convolutional-neural-networks-intuition-and-code-714ef1c38199
+
+        :param dA: previous layer's derivative.
+        """
+        x = self.cache['x']
+
+        n_filt, dim_filt, size_filt, _ = self.filters.shape
+        _, size_img, _ = x.shape
+
+        dA = np.zeros(shape=x.shape)  # dC/dA --> gradient of the input
+        dF = np.zeros(shape=self.filters.shape)  # dC/dF --> gradient of the filters
+        dB = np.zeros(shape=self.bias.shape)  # dC/dB --> gradient of the biases
+
+        for filt in range(n_filt):
+            y_filt = y_out = 0
+            while y_filt + size_filt <= size_img:
+                x_filt = x_out = 0
+                while x_filt + size_filt <= size_img:
+                    dF[filt] += dA_prev[filt, y_out, x_out] * x[:, y_filt:y_filt + size_filt, x_filt:x_filt + size_filt]
+
+                    dA[:, y_filt:y_filt + size_filt, x_filt:x_filt + size_filt] += (
+                                dA_prev[filt, y_out, x_out] * self.filters[filt])
+
+                    x_filt += self.stride
+                    x_out += 1
+
+                y_filt += self.stride
+                x_out += 1
+            dB += np.sum(dA_prev[filt])
+
+        self.grads['dF'] = dF
+        self.grads['dB'] = dB
+        return dA
 
 
 class Conv2D(ConvLayer):
