@@ -13,6 +13,14 @@ class MaxPooling2D(Layer):
     Max-pooling layer
     """
 
+    @property
+    def has_weights(self):
+        return False
+
+    @property
+    def has_bias(self):
+        return True
+
     def __init__(self, pool_size: Tuple, stride: int):
         """
         :param pool_size: size of pooling window size(2x2 Tuple)
@@ -20,6 +28,7 @@ class MaxPooling2D(Layer):
         """
         self.pool_size = pool_size
         self.stride = stride
+        self.cache = {}
 
     def run(self, x):
         """
@@ -46,7 +55,29 @@ class MaxPooling2D(Layer):
                     x_out += 1
                 curr_y += self.stride
                 y_out += 1
+
+        self.cache['X'] = x
         return out
 
-    def backprop(self, dA):
-        pass
+    def backprop(self, dA_prev):
+        """Back propagation in a max pooling layer"""
+        x = self.cache['X']
+        dim_x, h_x, w_x = x.shape
+        h_poolwindow, w_poolwindow = self.pool_size
+
+        dA = np.zeros(shape=x.shape)  # dC/dA --> gradient of the input
+        for ch in range(dim_x):
+            curr_y = out_y = 0
+            while curr_y + h_poolwindow <= h_x:
+                curr_x = out_x = 0
+                while curr_x + w_poolwindow <= w_x:
+                    window_slice = x[ch, curr_y:curr_y + h_poolwindow, curr_x + w_poolwindow]
+                    i, j = np.unravel_index(np.argmax(window_slice), window_slice.shape)
+                    dA[ch, curr_y + i, curr_x + j] = dA_prev[ch, out_y, out_x]
+
+                    curr_x += self.stride
+                    out_x += 1
+
+                curr_y += self.stride
+                out_y += 1
+        return dA
