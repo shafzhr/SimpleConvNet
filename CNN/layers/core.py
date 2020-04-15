@@ -29,6 +29,11 @@ class Dropout(Layer):
         return x * noise / (1 - self.rate)
 
     def backprop(self, dA):
+        """
+        Back propagation in a flattening layer
+        :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
+        :return: the derivative of the cost layer with respect to the current layer
+        """
         pass
 
 
@@ -52,7 +57,7 @@ class Flattening(Layer):
         """
         Back propagation in a flattening layer
         Reshapes the input to the same shape as the previous layer's output
-        :param dA_prev: derivative of the previous layer(when going backwards)
-        :return:
+        :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
+        :return: the derivative of the cost layer with respect to the current layer
         """
         return dA_prev.reshape(self.shape)

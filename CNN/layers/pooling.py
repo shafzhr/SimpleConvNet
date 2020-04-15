@@ -52,7 +52,11 @@ class MaxPooling2D(Layer):
         return out
 
     def backprop(self, dA_prev):
-        """Back propagation in a max pooling layer"""
+        """
+        Back propagation in a max pooling layer
+        :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
+        :return: the derivative of the cost layer with respect to the current layer
+        """
         x = self.cache['X']
         dim_x, h_x, w_x = x.shape
         h_poolwindow, w_poolwindow = self.pool_size

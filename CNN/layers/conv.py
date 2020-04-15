@@ -105,8 +105,8 @@ class ConvLayer(Layer, Trainable):
         https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e and:
         https://becominghuman.ai/back-propagation-in-convolutional-neural-networks-intuition-and-code-714ef1c38199
 
-        :param dA: previous layer's derivative.
-        :return: Current layer's derivative
+        :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
+        :return: the derivative of the cost layer with respect to the current layer
         """
         x = self.cache['x']
 
