@@ -4,22 +4,14 @@ Convolutional layers
 from typing import (
     Tuple,
 )
-from .layers import Layer
+from .layers import Layer, Trainable
 import numpy as np
 from ..utils.initializers import WEIGHT_FUNCTIONS, BIAS_FUNCTIONS
 from ..utils.activations import ACTIVATION_FUNCTIONS
 
 
-class ConvLayer(Layer):
+class ConvLayer(Layer, Trainable):
     """Convolutional layer"""
-
-    @property
-    def has_weights(self):
-        return True
-
-    @property
-    def has_bias(self):
-        return True
 
     def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
                  bias_initializer: int, stride: int, input_d: int, **kw):
@@ -145,6 +137,9 @@ class ConvLayer(Layer):
         self.grads['dF'] = dF
         self.grads['dB'] = dB
         return dA
+
+    def update_params(self):
+        pass
 
 
 class Conv2D(ConvLayer):

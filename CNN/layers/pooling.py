@@ -13,14 +13,6 @@ class MaxPooling2D(Layer):
     Max-pooling layer
     """
 
-    @property
-    def has_weights(self):
-        return False
-
-    @property
-    def has_bias(self):
-        return True
-
     def __init__(self, pool_size: Tuple, stride: int):
         """
         :param pool_size: size of pooling window size(2x2 Tuple)

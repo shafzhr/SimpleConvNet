@@ -7,22 +7,6 @@ import abc
 class Layer(metaclass=abc.ABCMeta):
     """Layer abstract class"""
 
-    @property
-    @abc.abstractmethod
-    def has_weights(self):
-        """
-        boolean, determines if the layer has weights
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
-    def has_bias(self):
-        """
-        boolean, determines if the layer has biases
-        """
-        pass
-
     @abc.abstractmethod
     def run(self, x):
         """
@@ -31,8 +15,18 @@ class Layer(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def backprop(self, dA):
+    def backprop(self, dA_prev):
         """
         Back propagate
+        """
+        pass
+
+
+class Trainable(metaclass=abc.ABCMeta):
+    """Trainable layer abstract class"""
+    @abc.abstractmethod
+    def update_params(self):
+        """
+        updating params using gradients
         """
         pass

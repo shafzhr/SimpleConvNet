@@ -10,14 +10,6 @@ class Dropout(Layer):
     Dropout layer
     """
 
-    @property
-    def has_weights(self):
-        return False
-
-    @property
-    def has_bias(self):
-        return False
-
     def __init__(self, rate):
         """
         :param rate: drop rate
@@ -44,14 +36,6 @@ class Flattening(Layer):
     """
     Flattening layer
     """
-
-    @property
-    def has_weights(self):
-        return False
-
-    @property
-    def has_bias(self):
-        return False
 
     def run(self, x):
         """
