@@ -18,6 +18,7 @@ class Dropout(Layer):
             raise ValueError("rate has to be between 0 and 1")
 
         self.rate = rate
+        self.noise = None
 
     def run(self, x):
         """
@@ -26,15 +27,17 @@ class Dropout(Layer):
         """
         shape = x.shape
         noise = np.random.choice([0, 1], shape, replace=True, p=[self.rate, 1 - self.rate])
+        self.noise = noise
         return x * noise / (1 - self.rate)
 
-    def backprop(self, dA):
+    def backprop(self, dA_prev):
         """
         Back propagation in a flattening layer
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
-        pass
+        dA = dA_prev * self.noise
+        return dA / (1 - self.rate)
 
 
 class Flattening(Layer):
