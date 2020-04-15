@@ -114,6 +114,7 @@ class ConvLayer(Layer):
         https://becominghuman.ai/back-propagation-in-convolutional-neural-networks-intuition-and-code-714ef1c38199
 
         :param dA: previous layer's derivative.
+        :return: Current layer's derivative
         """
         x = self.cache['x']
 
