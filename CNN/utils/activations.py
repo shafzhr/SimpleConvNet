@@ -1,12 +1,50 @@
 import numpy as np
+import abc
 
 
-def relu(x):
+class Activation(metaclass=abc.ABCMeta):
     """
-    puts relu over input 'x'
-    :param x: input(numpy array)
+    Activation abstract class
     """
-    x[x < 0] = 0
+
+    @abc.abstractmethod
+    def apply(self, x):
+        """
+        Applying the activation function over `x`
+        """
+        pass
+
+    @abc.abstractmethod
+    def backprop(self, dA_prev):
+        """
+        Back Propagation in an activation function
+        """
+        pass
 
 
-ACTIVATION_FUNCTIONS = {'relu': relu}
+class ReLU(Activation):
+    """
+    ReLU activation function
+    """
+
+    def __init__(self):
+        self.X = None
+
+    def apply(self, x):
+        """
+        Applying ReLU over `x`
+        :param x: input (numpy array)
+        """
+        self.X = x.copy()
+        x[x < 0] = 0
+
+    def backprop(self, dA_prev):
+        """
+        Back Propagation in ReLU
+        :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
+        :return: the derivative of the cost layer with respect to the current layer
+        """
+        return dA_prev * np.where(self.X > 0, 1, 0)
+
+
+ACTIVATION_FUNCTIONS = {'relu': ReLU}
