@@ -26,8 +26,12 @@ class ConvLayer(Layer, Trainable):
         """
         if len(filter_size) != 2:
             raise ValueError("Filter size has to be a Tuple of 2 elements(height, width)")
+
+        if activation not in ACTIVATION_FUNCTIONS.keys():
+            raise ValueError("Activation name has to be in {}".format(str(ACTIVATION_FUNCTIONS.keys())))
+
         self.filter_size = filter_size
-        self.activation_name = activation
+        self.activation = ACTIVATION_FUNCTIONS[activation]()
         self.stride = stride
         self.filter_initializer = filter_initializer
         self.filters = self.initialize_weights((filters_amount, input_d, *filter_size))
@@ -57,17 +61,6 @@ class ConvLayer(Layer, Trainable):
 
         return BIAS_FUNCTIONS[self.bias_initializer](shape)
 
-    def activation(self, x):
-        """
-        use the layer's activation function over input 'x'
-        :param x: input
-        :return nothing as the input array is passed by reference
-        """
-        if self.activation_name not in ACTIVATION_FUNCTIONS.keys():
-            raise ValueError("Activation name has to be in {}".format(str(ACTIVATION_FUNCTIONS.keys())))
-
-        ACTIVATION_FUNCTIONS[self.activation_name](x)
-
     def run(self, x):
         """Convolves the filters over 'x' """
         self.cache['X'] = x
@@ -95,6 +88,7 @@ class ConvLayer(Layer, Trainable):
                 y_filt += self.stride
                 y_out += 1
 
+        self.activation.apply(out)
         return out
 
     def backprop(self, dA_prev):
@@ -108,6 +102,8 @@ class ConvLayer(Layer, Trainable):
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
+        dA_prev = self.activation.backprop(dA_prev)
+
         x = self.cache['x']
 
         n_filt, dim_filt, size_filt, _ = self.filters.shape
@@ -125,7 +121,7 @@ class ConvLayer(Layer, Trainable):
                     dF[filt] += dA_prev[filt, y_out, x_out] * x[:, y_filt:y_filt + size_filt, x_filt:x_filt + size_filt]
 
                     dA[:, y_filt:y_filt + size_filt, x_filt:x_filt + size_filt] += (
-                                dA_prev[filt, y_out, x_out] * self.filters[filt])
+                            dA_prev[filt, y_out, x_out] * self.filters[filt])
 
                     x_filt += self.stride
                     x_out += 1
