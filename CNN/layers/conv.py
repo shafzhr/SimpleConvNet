@@ -157,5 +157,5 @@ class Conv2D(ConvLayer):
                          stride=stride,
                          filter_initializer=filter_initializer,
                          bias_initializer=bias_initializer,
-                         input_d=2
+                         input_d=1
                          )
