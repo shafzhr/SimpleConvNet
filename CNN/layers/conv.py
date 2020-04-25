@@ -88,7 +88,7 @@ class ConvLayer(Layer, Trainable):
                 y_filt += self.stride
                 y_out += 1
 
-        self.activation.apply(out)
+        out = self.activation.apply(out)
         return out
 
     def backprop(self, dA_prev):
