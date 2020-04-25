@@ -75,4 +75,4 @@ class Softmax(Activation):
         return dA_prev * (self.X * (1 - self.X))
 
 
-ACTIVATION_FUNCTIONS = {'relu': ReLU}
+ACTIVATION_FUNCTIONS = {'relu': ReLU, 'softmax': Softmax}
