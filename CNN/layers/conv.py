@@ -130,12 +130,54 @@ class ConvLayer(Layer, Trainable):
                 x_out += 1
             dB += np.sum(dA_prev[filt])
 
-        self.grads['dF'] = dF
+        self.grads['dW'] = dF
         self.grads['dB'] = dB
         return dA
 
-    def update_params(self):
-        pass
+    def _init_bias_weight_like(self):
+        d = {'dW': np.zeros_like(self.grads['dW']), 'dB': np.zeros_like(self.grads['dB'])}
+        return d
+
+    def _calc_momentum(self, beta):
+        """
+        :param beta:
+        :return:
+        """
+        if not self.grads['momentum']:
+            self.grads['momentum'] = self._init_bias_weight_like()
+        self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1-beta) * self.grads['dW']
+        self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1-beta) * self.grads['dB']
+
+    def _calc_rmsprop(self, beta):
+        """
+        :param beta:
+        :return:
+        """
+        if not self.grads['rmsprop']:
+            self.grads['rmsprop'] = self._init_bias_weight_like()
+        self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1-beta) * np.power(self.grads['dW'], 2)
+        self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1-beta) * np.power(self.grads['dB'], 2)
+
+    def update_params(self, optimizer, **kwarg):
+        """
+        :param optimizer:
+        :param kwarg:
+        :return:
+        """
+        if optimizer == 'adam':
+            if not all([arg in {'lr', 'beta1', 'beta2', 't', 'epsilon'} for arg in kwarg]):
+                raise ValueError("Incorrect arguments")
+
+            self._calc_momentum(kwarg['beta1'])
+            self._calc_rmsprop(kwarg['beta2'])
+
+            w_m_hat = self.grads['momentum']['dW'] / (1 - np.power(kwarg['beta1'], kwarg['t']))
+            b_m_hat = self.grads['momentum']['dB'] / (1 - np.power(kwarg['beta1'], kwarg['t']))
+            w_v_hat = self.grads['rmsprop']['dW'] / (1 - np.power(kwarg['beta2'], kwarg['t']))
+            b_v_hat = self.grads['rmsprop']['dB'] / (1 - np.power(kwarg['beta2'], kwarg['t']))
+
+            self.filters -= kwarg['lr'] * w_m_hat / (np.sqrt(w_v_hat) + kwarg['epsilon'])
+            self.bias -= kwarg['lr'] * b_m_hat / (np.sqrt(b_v_hat) + kwarg['epsilon'])
 
 
 class Conv2D(ConvLayer):
