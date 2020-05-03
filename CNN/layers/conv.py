@@ -14,7 +14,7 @@ class ConvLayer(Layer, Trainable):
     """Convolutional layer"""
 
     def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: int, stride: int, input_d: int, **kw):
+                 bias_initializer: str, stride: int, input_d: int, **kw):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal (height, width)
@@ -184,7 +184,7 @@ class Conv2D(ConvLayer):
     """2D Convolutional layer"""
 
     def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: int, stride: int):
+                 bias_initializer: str, stride: int):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal
