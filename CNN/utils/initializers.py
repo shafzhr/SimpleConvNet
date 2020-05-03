@@ -32,7 +32,7 @@ def zeros(shape):
     :param shape: tuple with the shape of the wanted output (filters_amount, depth, height, width)
     :return: array (it's shape=param shape) with initialized values using 'zeros' initializer
     """
-    return np.ones(shape=shape)
+    return np.zeros(shape=shape)
 
 
 def ones(shape):
