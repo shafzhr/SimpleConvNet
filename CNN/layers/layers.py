@@ -8,7 +8,7 @@ class Layer(metaclass=abc.ABCMeta):
     """Layer abstract class"""
 
     @abc.abstractmethod
-    def run(self, x):
+    def run(self, x, is_training):
         """
         feed an input 'x' through the layer
         """

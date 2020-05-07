@@ -8,7 +8,7 @@ class Activation(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def apply(self, x):
+    def apply(self, x, is_training):
         """
         Applying the activation function over `x`
         """
@@ -30,12 +30,14 @@ class ReLU(Activation):
     def __init__(self):
         self.X = None
 
-    def apply(self, x):
+    def apply(self, x, is_training=True):
         """
         Applying ReLU over `x`
         :param x: input (numpy array)
+        :param is_training: a boolean indicating whether training or not
         """
-        self.X = x.copy()
+        if is_training:
+            self.X = x.copy()
         x[x < 0] = 0
         return x
 
@@ -56,9 +58,10 @@ class Softmax(Activation):
     def __init__(self):
         self.X = None
 
-    def apply(self, x):
+    def apply(self, x, is_training=True):
         """
         Applying Softmax over `x`
+        :param is_training: a boolean indicating whether training or not
         :param x: input (numpy array)
         """
         self.X = x.copy()

@@ -97,15 +97,20 @@ class Dense(Layer, Trainable):
 
         return WEIGHT_FUNCTIONS[self.bias_initializer](shape)
 
-    def run(self, x):
+    def run(self, x, is_training=True):
         if not self.weights:
             self.initialize_weights((self.units, x.shape[0]))
-        self.cache['X'] = x
+        if is_training:
+            self.cache['X'] = x
 
         x = np.dot(self.weights, x) + self.bias
-        return self.activation.apply(x)
+        return self.activation.apply(x, is_training)
 
     def backprop(self, dA_prev):
+        """
+        :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
+        :return: the derivative of the cost function with respect to the current layer
+        """
         dA_prev = self.activation.backprop(dA_prev)
         x = self.cache['X']
         self.grads['dW'] = np.dot(dA_prev, x.transpose())

@@ -22,10 +22,11 @@ class MaxPooling2D(Layer):
         self.stride = stride
         self.cache = {}
 
-    def run(self, x):
+    def run(self, x, is_training=True):
         """
         Applying MaxPooling on `x`
         :param x: input
+        :param is_training: a boolean indicating whether training or not
         :return: output of the MaxPooling on `x`
         """
         dim_x, h_x, w_x = x.shape
@@ -47,8 +48,8 @@ class MaxPooling2D(Layer):
                     x_out += 1
                 curr_y += self.stride
                 y_out += 1
-
-        self.cache['X'] = x
+        if is_training:
+            self.cache['X'] = x
         return out
 
     def backprop(self, dA_prev):

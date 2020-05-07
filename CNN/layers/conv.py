@@ -61,9 +61,11 @@ class ConvLayer(Layer, Trainable):
 
         return BIAS_FUNCTIONS[self.bias_initializer](shape)
 
-    def run(self, x):
+    def run(self, x, is_training=True):
         """Convolves the filters over 'x' """
-        self.cache['X'] = x
+
+        if self.cache:
+            self.cache['X'] = x
 
         n_filt, dim_filt, size_filt, _ = self.filters.shape
         dim_img, size_img, _ = x.shape
@@ -88,7 +90,7 @@ class ConvLayer(Layer, Trainable):
                 y_filt += self.stride
                 y_out += 1
 
-        out = self.activation.apply(out)
+        out = self.activation.apply(out, is_training)
         return out
 
     def backprop(self, dA_prev):
