@@ -22,9 +22,10 @@ class Dropout(Layer):
         self.rate = rate
         self.noise = None
 
-    def run(self, x):
+    def run(self, x, is_training=True):
         """
         Applies dropout on `x`
+        :param is_training:
         :param x: input array
         """
         shape = x.shape
@@ -50,9 +51,10 @@ class Flattening(Layer):
     def __init__(self):
         self.shape = ()
 
-    def run(self, x):
+    def run(self, x, is_training=True):
         """
         Flattening array
+        :param is_training:
         :param x: input to flatten
         """
         self.shape = x.shape
