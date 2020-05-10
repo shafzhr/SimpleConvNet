@@ -38,7 +38,7 @@ class ConvLayer(Layer, Trainable):
         self.bias_initializer = bias_initializer
         self.bias = self.initialize_bias((filters_amount, 1))
         self.cache = {}
-        self.grads = {}
+        self.grads = self._init_bias_weight_like()
 
     def initialize_weights(self, shape):
         """
@@ -132,12 +132,12 @@ class ConvLayer(Layer, Trainable):
                 x_out += 1
             dB += np.sum(dA_prev[filt])
 
-        self.grads['dW'] = dF
-        self.grads['dB'] = dB
+        self.grads['dW'] += dF
+        self.grads['dB'] += dB
         return dA
 
     def _init_bias_weight_like(self):
-        d = {'dW': np.zeros_like(self.grads['dW']), 'dB': np.zeros_like(self.grads['dB'])}
+        d = {'dW': np.zeros_like(self.filters), 'dB': np.zeros_like(self.bias)}
         return d
 
     def _calc_momentum(self, beta):
@@ -147,8 +147,8 @@ class ConvLayer(Layer, Trainable):
         """
         if not self.grads['momentum']:
             self.grads['momentum'] = self._init_bias_weight_like()
-        self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1-beta) * self.grads['dW']
-        self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1-beta) * self.grads['dB']
+        self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1 - beta) * self.grads['dW']
+        self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1 - beta) * self.grads['dB']
 
     def _calc_rmsprop(self, beta):
         """
@@ -157,15 +157,19 @@ class ConvLayer(Layer, Trainable):
         """
         if not self.grads['rmsprop']:
             self.grads['rmsprop'] = self._init_bias_weight_like()
-        self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1-beta) * np.power(self.grads['dW'], 2)
-        self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1-beta) * np.power(self.grads['dB'], 2)
+        self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1 - beta) * np.power(self.grads['dW'], 2)
+        self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1 - beta) * np.power(self.grads['dB'], 2)
 
-    def update_params(self, optimizer, **kwarg):
+    def update_params(self, optimizer, batch_size, **kwarg):
         """
         :param optimizer:
+        :param batch_size:
         :param kwarg:
         :return:
         """
+        self.grads['dW'] = self.grads['dW'] / batch_size
+        self.grads['dB'] = self.grads['dW'] / batch_size
+
         if optimizer == 'adam':
             if not all([arg in {'lr', 'beta1', 'beta2', 't', 'epsilon'} for arg in kwarg]):
                 raise ValueError("Incorrect arguments")
@@ -180,6 +184,9 @@ class ConvLayer(Layer, Trainable):
 
             self.filters -= kwarg['lr'] * w_m_hat / (np.sqrt(w_v_hat) + kwarg['epsilon'])
             self.bias -= kwarg['lr'] * b_m_hat / (np.sqrt(b_v_hat) + kwarg['epsilon'])
+
+        self.grads['dW'].fill(0)
+        self.grads['dB'].fill(0)
 
 
 class Conv2D(ConvLayer):

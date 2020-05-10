@@ -25,7 +25,7 @@ class Layer(metaclass=abc.ABCMeta):
 class Trainable(metaclass=abc.ABCMeta):
     """Trainable layer abstract class"""
     @abc.abstractmethod
-    def update_params(self, optimizer, **kwargs):
+    def update_params(self, optimizer, batch_size, **kwargs):
         """
         updating params using gradients
         """
