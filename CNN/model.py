@@ -59,8 +59,10 @@ class Model:
 
         iteration = 1
         for epoch in range(epochs):
-            print("Epoch #{} : ".format(epoch + 1), end='')
-            for x_batch, y_batch in tqdm(get_batches(X_train, y_train, batch_size)):
+            description = "Epoch #{} :".format(epoch + 1)
+            pbar = tqdm(get_batches(X_train, y_train, batch_size))
+            pbar.set_description(description)
+            for x_batch, y_batch in pbar:
                 for x, y in zip(x_batch, y_batch):
                     x_pred = x.copy()
                     for layer in self.layers:
