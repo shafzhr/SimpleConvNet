@@ -23,10 +23,12 @@ class Model:
     Model of neural network
     """
 
-    def __init__(self, layers: List = None):
+    def __init__(self, layers=None):
         """
         :param layers: model's layers
         """
+        if layers is None:
+            layers = []
         self.layers = list(layers)
         self.loss = None
 
