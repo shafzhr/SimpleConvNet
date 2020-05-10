@@ -41,6 +41,9 @@ class Model:
             raise ValueError("Layer has to be an instance of Layer")
         self.layers.append(layer)
 
+    def set_loss(self, loss):
+        self.loss = loss
+
     def train(self, data: Tuple[List, List, List, List], batch_size: int, epochs: int, optimizer: str,
               **optimizer_params):
         """
