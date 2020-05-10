@@ -7,6 +7,16 @@ from CNN.layers.layers import Layer, Trainable
 from CNN.utils.data import get_batches
 
 
+def evaluate(output, target):
+    """
+    Evaluate the accuracy of the model
+    :param output:
+    :param target:
+    :return: accuracy in a scale of 0 to 1
+    """
+    return np.mean(np.argmax(target, axis=1) == np.argmax(output, axis=1))
+
+
 class Model:
     """
     Model of neural network
@@ -49,10 +59,10 @@ class Model:
             print("Epoch #{}".format(epoch + 1))
             for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
                 for x, y in zip(x_batch, y_batch):
-                    x_preds = x.copy()
+                    x_pred = x.copy()
                     for layer in self.layers:
-                        x_preds = layer.run(x_preds)
-                    dA = self.loss.calc_loss(x_preds, y)
+                        x_pred = layer.run(x_pred)
+                    dA = self.loss.calc_loss(x_pred, y)
                     for layer in reversed(self.layers):
                         dA = layer.backprop(dA)
                 for layer in self.layers:
@@ -60,3 +70,15 @@ class Model:
                         layer.update_params('adam', batch_size, **optimizer_params, t=iteration)
             iteration += batch_size
 
+    def predict(self, batch):
+        predictions = []
+        for X in batch:
+            x_pred = X.copy()
+            for layer in self.layers:
+                x_pred = layer.run(x_pred, is_training=False)
+            predictions.append(x_pred)
+        return predictions
+
+    def evaluate(self, batch, labels):
+        predictions = self.predict(batch)
+        return evaluate(predictions, labels)
