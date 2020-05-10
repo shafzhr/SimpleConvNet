@@ -100,6 +100,8 @@ class Dense(Layer, Trainable):
     def run(self, x, is_training=True):
         if not self.weights:
             self.initialize_weights((self.units, x.shape[0]))
+            self.grads = self._init_bias_weight_like()
+
         if is_training:
             self.cache['X'] = x
 
@@ -113,8 +115,8 @@ class Dense(Layer, Trainable):
         """
         dA_prev = self.activation.backprop(dA_prev)
         x = self.cache['X']
-        self.grads['dW'] = np.dot(dA_prev, x.transpose())
-        self.grads['dB'] = dA_prev
+        self.grads['dW'] += np.dot(dA_prev, x.transpose())
+        self.grads['dB'] += dA_prev
         return np.dot(self.weights.transpose(), dA_prev)
 
     def _init_bias_weight_like(self):
@@ -141,12 +143,16 @@ class Dense(Layer, Trainable):
         self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1-beta) * np.power(self.grads['dW'], 2)
         self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1-beta) * np.power(self.grads['dB'], 2)
 
-    def update_params(self, optimizer, **kwarg):
+    def update_params(self, optimizer, batch_size, **kwarg):
         """
         :param optimizer:
+        :param batch_size:
         :param kwarg:
         :return:
         """
+        self.grads['dW'] = self.grads['dW'] / batch_size
+        self.grads['dB'] = self.grads['dW'] / batch_size
+
         if optimizer == 'adam':
             if not all([arg in {'lr', 'beta1', 'beta2', 't', 'epsilon'} for arg in kwarg]):
                 raise ValueError("Incorrect arguments")
@@ -161,3 +167,6 @@ class Dense(Layer, Trainable):
 
             self.weights -= kwarg['lr'] * w_m_hat / (np.sqrt(w_v_hat) + kwarg['epsilon'])
             self.bias -= kwarg['lr'] * b_m_hat / (np.sqrt(b_v_hat) + kwarg['epsilon'])
+
+        self.grads['dW'].fill(0)
+        self.grads['dB'].fill(0)
