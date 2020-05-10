@@ -5,6 +5,7 @@ from typing import (
 )
 from CNN.layers.layers import Layer, Trainable
 from CNN.utils.data import get_batches
+from tqdm import tqdm
 
 
 def evaluate(output, target):
@@ -56,8 +57,8 @@ class Model:
 
         iteration = 1
         for epoch in range(epochs):
-            print("Epoch #{}".format(epoch + 1))
-            for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
+            print("Epoch #{} : ".format(epoch + 1), end='')
+            for x_batch, y_batch in tqdm(get_batches(X_train, y_train, batch_size)):
                 for x, y in zip(x_batch, y_batch):
                     x_pred = x.copy()
                     for layer in self.layers:
@@ -68,6 +69,7 @@ class Model:
                 for layer in self.layers:
                     if isinstance(layer, Trainable):
                         layer.update_params('adam', batch_size, **optimizer_params, t=iteration)
+            print("Epoch {} : {}%".format(epoch, self.evaluate(X_test, y_test)*100))
             iteration += batch_size
 
     def predict(self, batch):
