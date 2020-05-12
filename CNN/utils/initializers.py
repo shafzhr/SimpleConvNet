@@ -32,7 +32,7 @@ def zeros(shape):
     :param shape: tuple with the shape of the wanted output (filters_amount, depth, height, width)
     :return: array (it's shape=param shape) with initialized values using 'zeros' initializer
     """
-    return np.ones(shape=shape)
+    return np.zeros(shape=shape)
 
 
 def ones(shape):
@@ -48,12 +48,20 @@ def _calc_fans(shape):
     :param shape: tuple with the shape(4D - for example, filters, depth, width, height)
     :return: (fan_in, fan_out)
     """
-    if len(shape) != 4:
+    if len(shape) == 2:
+        # Fully connected layer (units, input)
+        fan_in = shape[1]
+        fan_out = shape[0]
+
+    elif len(shape) in {3, 4, 5}:
+        # Convolutional kernals
+        k_size = np.prod(shape[2:])
+        fan_in = k_size * shape[1]
+        fan_out = k_size * shape[0]
+
+    else:
         raise ValueError("Incompatible shape")
 
-    k_size = np.prod(shape[2:])
-    fan_in = k_size * shape[1]
-    fan_out = k_size * shape[0]
     return fan_in, fan_out
 
 
