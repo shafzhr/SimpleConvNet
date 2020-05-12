@@ -94,14 +94,14 @@ class Dense(Layer, Trainable):
         return WEIGHT_FUNCTIONS[self.weight_initializer](shape)
 
     def initialize_bias(self, shape):
-        if self.bias_initializer not in WEIGHT_FUNCTIONS.keys():
+        if self.bias_initializer not in BIAS_FUNCTIONS.keys():
             raise ValueError("Bias initializer name has to be in {}".format(str(BIAS_FUNCTIONS.keys())))
 
-        return WEIGHT_FUNCTIONS[self.bias_initializer](shape)
+        return BIAS_FUNCTIONS[self.bias_initializer](shape)
 
     def run(self, x, is_training=True):
-        if not self.weights:
-            self.initialize_weights((self.units, x.shape[0]))
+        if self.weights is None:
+            self.weights = self.initialize_weights((self.units, x.shape[0]))
             self.grads = self._init_bias_weight_like()
 
         if is_training:
@@ -122,7 +122,7 @@ class Dense(Layer, Trainable):
         return np.dot(self.weights.transpose(), dA_prev)
 
     def _init_bias_weight_like(self):
-        d = {'dW': np.zeros_like(self.grads['dW']), 'dB': np.zeros_like(self.grads['dB'])}
+        d = {'dW': np.zeros_like(self.weights), 'dB': np.zeros_like(self.bias)}
         return d
 
     def _calc_momentum(self, beta):
@@ -130,7 +130,7 @@ class Dense(Layer, Trainable):
         :param beta:
         :return:
         """
-        if not self.grads['momentum']:
+        if 'momentum' not in self.grads.keys():
             self.grads['momentum'] = self._init_bias_weight_like()
         self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1-beta) * self.grads['dW']
         self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1-beta) * self.grads['dB']
@@ -140,7 +140,7 @@ class Dense(Layer, Trainable):
         :param beta:
         :return:
         """
-        if not self.grads['rmsprop']:
+        if 'rmsprop' not in self.grads.keys():
             self.grads['rmsprop'] = self._init_bias_weight_like()
         self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1-beta) * np.power(self.grads['dW'], 2)
         self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1-beta) * np.power(self.grads['dB'], 2)
@@ -152,8 +152,8 @@ class Dense(Layer, Trainable):
         :param kwarg:
         :return:
         """
-        self.grads['dW'] = self.grads['dW'] / batch_size
-        self.grads['dB'] = self.grads['dW'] / batch_size
+        self.grads['dW'] /= batch_size
+        self.grads['dB'] /= batch_size
 
         if optimizer == 'adam':
             if not all([arg in {'lr', 'beta1', 'beta2', 't', 'epsilon'} for arg in kwarg]):

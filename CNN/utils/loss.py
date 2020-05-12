@@ -18,7 +18,7 @@ class CategoricalCrossEntropy:
         """
         output /= output.sum(axis=-1, keepdims=True)
         output = np.clip(output, 1e-7, 1 - 1e-7)
-        return np.sum(target * -np.log(output), axis=-1, keepdims=False)
+        return np.sum(target * -np.log(output), axis=-1, keepdims=True)
 
     @staticmethod
     def calc_derivative(output, target):

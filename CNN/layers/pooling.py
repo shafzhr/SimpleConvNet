@@ -68,7 +68,7 @@ class MaxPooling2D(Layer):
             while curr_y + h_poolwindow <= h_x:
                 curr_x = out_x = 0
                 while curr_x + w_poolwindow <= w_x:
-                    window_slice = x[ch, curr_y:curr_y + h_poolwindow, curr_x + w_poolwindow]
+                    window_slice = x[ch, curr_y:curr_y + h_poolwindow, curr_x:curr_x + w_poolwindow]
                     i, j = np.unravel_index(np.argmax(window_slice), window_slice.shape)
                     dA[ch, curr_y + i, curr_x + j] = dA_prev[ch, out_y, out_x]
 

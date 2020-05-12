@@ -14,7 +14,7 @@ class ConvLayer(Layer, Trainable):
     """Convolutional layer"""
 
     def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: str, stride: int, input_d: int, **kw):
+                 bias_initializer: str, stride: int, **kw):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal (height, width)
@@ -30,15 +30,16 @@ class ConvLayer(Layer, Trainable):
         if activation not in ACTIVATION_FUNCTIONS.keys():
             raise ValueError("Activation name has to be in {}".format(str(ACTIVATION_FUNCTIONS.keys())))
 
+        self.units = filters_amount
         self.filter_size = filter_size
         self.activation = ACTIVATION_FUNCTIONS[activation]()
         self.stride = stride
         self.filter_initializer = filter_initializer
-        self.filters = self.initialize_weights((filters_amount, input_d, *filter_size))
+        self.filters = None
         self.bias_initializer = bias_initializer
         self.bias = self.initialize_bias((filters_amount, 1))
         self.cache = {}
-        self.grads = self._init_bias_weight_like()
+        self.grads = {}
 
     def initialize_weights(self, shape):
         """
@@ -63,8 +64,11 @@ class ConvLayer(Layer, Trainable):
 
     def run(self, x, is_training=True):
         """Convolves the filters over 'x' """
+        if self.filters is None:
+            self.filters = self.initialize_weights((self.units, x.shape[0], *self.filter_size))
+            self.grads = self._init_bias_weight_like()
 
-        if self.cache:
+        if is_training:
             self.cache['X'] = x
 
         n_filt, dim_filt, size_filt, _ = self.filters.shape
@@ -106,7 +110,7 @@ class ConvLayer(Layer, Trainable):
         """
         dA_prev = self.activation.backprop(dA_prev)
 
-        x = self.cache['x']
+        x = self.cache['X']
 
         n_filt, dim_filt, size_filt, _ = self.filters.shape
         _, size_img, _ = x.shape
@@ -145,7 +149,7 @@ class ConvLayer(Layer, Trainable):
         :param beta:
         :return:
         """
-        if not self.grads['momentum']:
+        if 'momentum' not in self.grads.keys():
             self.grads['momentum'] = self._init_bias_weight_like()
         self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1 - beta) * self.grads['dW']
         self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1 - beta) * self.grads['dB']
@@ -155,7 +159,7 @@ class ConvLayer(Layer, Trainable):
         :param beta:
         :return:
         """
-        if not self.grads['rmsprop']:
+        if 'rmsprop' not in self.grads.keys():
             self.grads['rmsprop'] = self._init_bias_weight_like()
         self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1 - beta) * np.power(self.grads['dW'], 2)
         self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1 - beta) * np.power(self.grads['dB'], 2)
@@ -167,8 +171,8 @@ class ConvLayer(Layer, Trainable):
         :param kwarg:
         :return:
         """
-        self.grads['dW'] = self.grads['dW'] / batch_size
-        self.grads['dB'] = self.grads['dW'] / batch_size
+        self.grads['dW'] /= batch_size
+        self.grads['dB'] /= batch_size
 
         if optimizer == 'adam':
             if not all([arg in {'lr', 'beta1', 'beta2', 't', 'epsilon'} for arg in kwarg]):
@@ -208,5 +212,4 @@ class Conv2D(ConvLayer):
                          stride=stride,
                          filter_initializer=filter_initializer,
                          bias_initializer=bias_initializer,
-                         input_d=1
                          )
