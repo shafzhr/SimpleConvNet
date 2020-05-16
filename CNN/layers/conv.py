@@ -79,20 +79,16 @@ class ConvLayer(Layer, Trainable):
 
         size_out = int((size_img - size_filt) / self.stride) + 1
 
-        out = np.zeros((n_filt, size_out, size_out))
-        for filt in range(n_filt):
-            y_filt = y_out = 0
-            while y_filt + size_filt <= size_img:
-                x_filt = x_out = 0
-                while x_filt + size_filt <= size_img:
-                    out[filt, y_out, x_out] = np.sum(
-                        self.filters[filt] * (x[:, y_filt: y_filt + size_filt, x_filt:x_filt + size_filt])
-                        + self.bias[filt]
-                    )
-                    x_filt += self.stride
-                    x_out += 1
-                y_filt += self.stride
-                y_out += 1
+        ch, h, w = x.shape
+        Hout = (h - self.filters.shape[-2]) // self.stride + 1
+        Wout = (w - self.filters.shape[-1]) // self.stride + 1
+
+        a = np.lib.stride_tricks.as_strided(x, (Hout, Wout, ch, self.filters.shape[2], self.filters.shape[3]),
+                                            (x.strides[1] * self.stride, x.strides[2] * self.stride) + (
+                                            x.strides[0], x.strides[1], x.strides[2]))
+        out = np.einsum('ijckl,ackl->aij', a, self.filters)
+        for b in self.bias:
+            out += b
 
         out = self.activation.apply(out, is_training)
         return out
@@ -149,7 +145,7 @@ class ConvLayer(Layer, Trainable):
         :param beta:
         :return:
         """
-        if 'momentum' not in self.grads.keys():
+        if 'momentum' not in self.grads:
             self.grads['momentum'] = self._init_bias_weight_like()
         self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1 - beta) * self.grads['dW']
         self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1 - beta) * self.grads['dB']
@@ -159,7 +155,7 @@ class ConvLayer(Layer, Trainable):
         :param beta:
         :return:
         """
-        if 'rmsprop' not in self.grads.keys():
+        if 'rmsprop' not in self.grads:
             self.grads['rmsprop'] = self._init_bias_weight_like()
         self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1 - beta) * np.power(self.grads['dW'], 2)
         self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1 - beta) * np.power(self.grads['dB'], 2)
