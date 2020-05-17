@@ -5,6 +5,7 @@ from typing import (
     Tuple,
 )
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 from .layers import Layer
 
 
@@ -35,19 +36,12 @@ class MaxPooling2D(Layer):
         out_h = int((h_x - h_poolwindow) / self.stride) + 1
         out_w = int((w_x - w_poolwindow) / self.stride) + 1
 
-        out = np.zeros((dim_x, out_h, out_w))
-        for ch in range(dim_x):
-            curr_y = y_out = 0
-            while curr_y + h_poolwindow <= h_x:
-                curr_x = x_out = 0
-                while curr_x + w_poolwindow <= w_x:
-                    out[ch, y_out, x_out] = np.max(x[ch,
-                                                   curr_y:curr_y + h_poolwindow,
-                                                   curr_x:curr_x + w_poolwindow])
-                    curr_x += self.stride
-                    x_out += 1
-                curr_y += self.stride
-                y_out += 1
+        windows = as_strided(x,
+                             shape=(dim_x, out_h, out_w, *self.pool_size),
+                             strides=(x.strides[0], self.stride*x.strides[1], self.stride*x.strides[2]) +
+                                     (x.strides[1], x.strides[2]))
+        out = np.max(windows, axis=(3, 4))
+
         if is_training:
             self.cache['X'] = x
         return out
