@@ -28,10 +28,18 @@ class Dropout(Layer):
         :param is_training:
         :param x: input array
         """
-        shape = x.shape
-        noise = np.random.choice([0, 1], shape, replace=True, p=[self.rate, 1 - self.rate])
+
+        pKeep = 1 - self.rate
+        weights = np.ones(x.shape)
+        noise = np.random.rand(*weights.shape) < pKeep
         self.noise = noise
-        return x * noise / (1 - self.rate)
+        res = np.multiply(weights, noise)
+        return res / pKeep
+
+        # shape = x.shape
+        # noise = np.random.choice([0, 1], shape, replace=True, p=[self.rate, 1 - self.rate])
+        # self.noise = noise
+        # return x * noise / (1 - self.rate)
 
     def backprop(self, dA_prev):
         """

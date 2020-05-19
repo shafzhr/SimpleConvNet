@@ -71,28 +71,23 @@ class ConvLayer(Layer, Trainable):
         if is_training:
             self.cache['X'] = x
 
-        n_filt, dim_filt, size_filt, _ = self.filters.shape
-        dim_img, size_img, _ = x.shape
+        n_filt, ch_filt, h_filt, w_filt = self.filters.shape
+        ch, h, w = x.shape
 
-        if dim_filt != dim_img:
+        if ch_filt != ch:
             raise ValueError("Image and filter dimension must be the same")
 
-        size_out = int((size_img - size_filt) / self.stride) + 1
+        h_out = (h - h_filt) // self.stride + 1
+        w_out = (w - w_filt) // self.stride + 1
 
-        out = np.zeros((n_filt, size_out, size_out))
-        for filt in range(n_filt):
-            y_filt = y_out = 0
-            while y_filt + size_filt <= size_img:
-                x_filt = x_out = 0
-                while x_filt + size_filt <= size_img:
-                    out[filt, y_out, x_out] = np.sum(
-                        self.filters[filt] * (x[:, y_filt: y_filt + size_filt, x_filt:x_filt + size_filt])
-                        + self.bias[filt]
-                    )
-                    x_filt += self.stride
-                    x_out += 1
-                y_filt += self.stride
-                y_out += 1
+        sub_windows = np.lib.stride_tricks.as_strided(x, (h_out, w_out, ch, h_filt, w_filt),
+                                             (x.strides[1] * self.stride, x.strides[2] * self.stride, x.strides[0]) +
+                                             (x.strides[1], x.strides[2]))
+        out = np.tensordot(sub_windows, self.filters, axes=[(2, 3, 4), (1, 2, 3)])
+        out = out.transpose((2, 0, 1))
+
+        for b in self.bias:
+            out += b
 
         out = self.activation.apply(out, is_training)
         return out
@@ -112,29 +107,33 @@ class ConvLayer(Layer, Trainable):
 
         x = self.cache['X']
 
-        n_filt, dim_filt, size_filt, _ = self.filters.shape
-        _, size_img, _ = x.shape
+        n_filt, ch_filt, h_filt, w_filt = self.filters.shape
+        ch_img, h, w = x.shape
+        dA_ch, dA_h, dA_w = dA_prev.shape
 
-        dA = np.zeros(shape=x.shape)  # dC/dA --> gradient of the input
-        dF = np.zeros(shape=self.filters.shape)  # dC/dF --> gradient of the filters
         dB = np.zeros(shape=self.bias.shape)  # dC/dB --> gradient of the biases
+        dB += np.sum(dA_prev)
 
-        for filt in range(n_filt):
-            y_filt = y_out = 0
-            while y_filt + size_filt <= size_img:
-                x_filt = x_out = 0
-                while x_filt + size_filt <= size_img:
-                    dF[filt] += dA_prev[filt, y_out, x_out] * x[:, y_filt:y_filt + size_filt, x_filt:x_filt + size_filt]
+        as_strided = np.lib.stride_tricks.as_strided
 
-                    dA[:, y_filt:y_filt + size_filt, x_filt:x_filt + size_filt] += (
-                            dA_prev[filt, y_out, x_out] * self.filters[filt])
+        F = as_strided(x, (ch_img, h_filt, w_filt, dA_h, dA_w),
+                                            (x.strides[0], x.strides[1] * self.stride, x.strides[2] * self.stride) + (
+                                             x.strides[1], x.strides[2]))
+        F = np.tensordot(F, dA_prev, axes=[(-2, -1), (1, 2)])
+        dF = F.transpose((3, 0, 1, 2))
 
-                    x_filt += self.stride
-                    x_out += 1
+        pad_h = dA_h - 1
+        pad_w = dA_w - 1
+        pad_filt = np.pad(self.filters, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), 'constant')
+        sub_windows = as_strided(pad_filt,
+                                 shape=(n_filt, h, w, dA_h, dA_w, ch_filt),
+                                 strides=(pad_filt.strides[0], pad_filt.strides[2] * self.stride,
+                                          pad_filt.strides[3] * self.stride, pad_filt.strides[2],
+                                          pad_filt.strides[3], pad_filt.strides[1])
+                                 )
 
-                y_filt += self.stride
-                x_out += 1
-            dB += np.sum(dA_prev[filt])
+        dA = np.tensordot(sub_windows, dA_prev[:, ::-1, ::-1], axes=[(0, 3, 4), (0, 1, 2)])
+        dA = dA.transpose((2, 0, 1))
 
         self.grads['dW'] += dF
         self.grads['dB'] += dB
@@ -149,7 +148,7 @@ class ConvLayer(Layer, Trainable):
         :param beta:
         :return:
         """
-        if 'momentum' not in self.grads.keys():
+        if 'momentum' not in self.grads:
             self.grads['momentum'] = self._init_bias_weight_like()
         self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1 - beta) * self.grads['dW']
         self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1 - beta) * self.grads['dB']
@@ -159,7 +158,7 @@ class ConvLayer(Layer, Trainable):
         :param beta:
         :return:
         """
-        if 'rmsprop' not in self.grads.keys():
+        if 'rmsprop' not in self.grads:
             self.grads['rmsprop'] = self._init_bias_weight_like()
         self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1 - beta) * np.power(self.grads['dW'], 2)
         self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1 - beta) * np.power(self.grads['dB'], 2)
