@@ -60,23 +60,29 @@ class Model:
         assert len(X_train) == len(y_train)
         assert len(X_test) == len(y_test)
 
+        batch_amount = (len(X_train) - 1) // batch_size + 1
         iteration = 1
         for epoch in range(epochs):
             description = "Epoch #{} :".format(epoch + 1)
-            pbar = tqdm(get_batches(X_train, y_train, batch_size))
+            pbar = tqdm(range(batch_amount))
             pbar.set_description(description)
-            for x_batch, y_batch in pbar:
+            for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
                 for x, y in zip(x_batch, y_batch):
                     x_pred = x.copy()
                     for layer in self.layers:
                         x_pred = layer.run(x_pred)
                     dA = self.loss.calc_loss(x_pred, y)
+
                     for layer in reversed(self.layers):
                         dA = layer.backprop(dA)
+
                 for layer in self.layers:
                     if isinstance(layer, Trainable):
                         layer.update_params('adam', batch_size, **optimizer_params, t=iteration)
-            print("Epoch {} : {}%".format(epoch, self.evaluate(X_test, y_test)*100))
+
+                pbar.update(1)
+
+            print("Epoch {} : {}%".format(epoch, self.evaluate(X_test, y_test) * 100))
             iteration += batch_size
 
     def predict(self, batch):
