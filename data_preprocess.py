@@ -94,7 +94,8 @@ def to_categorical(labels, num_classes):
 
 def get_data():
     size = 32
-    class_size = 20000
+    # class_size = 20000
+    class_size = 1000
     # rand_state = 42
     # np.random.seed(rand_state)
 
