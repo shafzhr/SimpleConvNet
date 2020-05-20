@@ -81,8 +81,9 @@ class ConvLayer(Layer, Trainable):
         w_out = (w - w_filt) // self.stride + 1
 
         sub_windows = np.lib.stride_tricks.as_strided(x, (h_out, w_out, ch, h_filt, w_filt),
-                                             (x.strides[1] * self.stride, x.strides[2] * self.stride, x.strides[0]) +
-                                             (x.strides[1], x.strides[2]))
+                                                      (x.strides[1] * self.stride, x.strides[2] * self.stride,
+                                                       x.strides[0]) +
+                                                      (x.strides[1], x.strides[2]))
         out = np.tensordot(sub_windows, self.filters, axes=[(2, 3, 4), (1, 2, 3)])
         out = out.transpose((2, 0, 1))
 
@@ -116,10 +117,13 @@ class ConvLayer(Layer, Trainable):
 
         as_strided = np.lib.stride_tricks.as_strided
 
-        F = as_strided(x, (ch_img, h_filt, w_filt, dA_h, dA_w),
-                                            (x.strides[0], x.strides[1] * self.stride, x.strides[2] * self.stride) + (
-                                             x.strides[1], x.strides[2]))
-        F = np.tensordot(F, dA_prev, axes=[(-2, -1), (1, 2)])
+        sub_windows = as_strided(x,
+                                 shape=(ch_img, h_filt, w_filt, dA_h, dA_w),
+                                 strides=(x.strides[0], x.strides[1] * self.stride,
+                                          x.strides[2] * self.stride,
+                                          x.strides[1], x.strides[2])
+                                 )
+        F = np.tensordot(sub_windows, dA_prev, axes=[(-2, -1), (1, 2)])
         dF = F.transpose((3, 0, 1, 2))
 
         pad_h = dA_h - 1
