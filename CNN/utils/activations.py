@@ -64,10 +64,11 @@ class Softmax(Activation):
         :param is_training: a boolean indicating whether training or not
         :param x: input (numpy array)
         """
-        self.X = x.copy()
+        if is_training:
+            self.X = x.copy()
         shiftx = x - np.max(x)
         exps = np.exp(shiftx)
-        return exps / np.sum(exps, axis=0, keepdims=True)
+        return (exps / np.sum(exps, axis=0, keepdims=True)).T
 
     def backprop(self, dA_prev):
         """
@@ -75,6 +76,7 @@ class Softmax(Activation):
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
+        dA_prev = dA_prev.T
         return dA_prev * (self.X * (1 - self.X))
 
 
