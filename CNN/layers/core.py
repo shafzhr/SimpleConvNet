@@ -31,7 +31,7 @@ class Dropout(Layer):
 
         pKeep = 1 - self.rate
         weights = np.ones(x.shape)
-        noise = np.random.rand(*weights.shape) < pKeep
+        noise = np.random.rand(*weights.shape) < pKeep  # !!!
         self.noise = noise
         res = np.multiply(weights, noise)
         return res / pKeep
@@ -65,8 +65,9 @@ class Flattening(Layer):
         :param is_training:
         :param x: input to flatten
         """
-        self.shape = x.shape
-        return x.reshape((np.prod(x.shape), 1))
+        if is_training:
+            self.shape = x.shape
+        return x.flatten().reshape((x.shape[0], -1)).T
 
     def backprop(self, dA_prev):
         """
@@ -126,7 +127,7 @@ class Dense(Layer, Trainable):
         dA_prev = self.activation.backprop(dA_prev)
         x = self.cache['X']
         self.grads['dW'] += np.dot(dA_prev, x.transpose())
-        self.grads['dB'] += dA_prev
+        self.grads['dB'] += np.sum(dA_prev, axis=1).reshape((-1, 1))
         return np.dot(self.weights.transpose(), dA_prev)
 
     def _init_bias_weight_like(self):
