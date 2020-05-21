@@ -6,6 +6,7 @@ from typing import (
 from CNN.layers.layers import Layer, Trainable
 from CNN.utils.data import get_batches
 from tqdm import tqdm
+import time
 
 
 def evaluate(output, target):
@@ -67,14 +68,17 @@ class Model:
             pbar = tqdm(range(batch_amount))
             pbar.set_description(description)
             for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
-                for x, y in zip(x_batch, y_batch):
-                    x_pred = x.copy()
-                    for layer in self.layers:
-                        x_pred = layer.run(x_pred)
-                    dA = self.loss.calc_loss(x_pred, y)
+                start = time.time()
+                x_pred = x_batch.copy()
+                for layer in self.layers:
+                    x_pred = layer.run(x_pred)
 
-                    for layer in reversed(self.layers):
-                        dA = layer.backprop(dA)
+                dA = self.loss.calc_derivative(x_pred, y_batch)
+
+                for layer in reversed(self.layers):
+                    dA = layer.backprop(dA)
+
+                print(time.time()-start)
 
                 for layer in self.layers:
                     if isinstance(layer, Trainable):
