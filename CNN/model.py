@@ -68,7 +68,6 @@ class Model:
             pbar = tqdm(range(batch_amount))
             pbar.set_description(description)
             for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
-                start = time.time()
                 x_pred = x_batch.copy()
                 for layer in self.layers:
                     x_pred = layer.run(x_pred)
@@ -77,8 +76,6 @@ class Model:
 
                 for layer in reversed(self.layers):
                     dA = layer.backprop(dA)
-
-                print(time.time()-start)
 
                 for layer in self.layers:
                     if isinstance(layer, Trainable):
