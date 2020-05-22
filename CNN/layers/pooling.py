@@ -5,6 +5,7 @@ from typing import (
     Tuple,
 )
 import numpy as np
+import skimage.measure
 from numpy.lib.stride_tricks import as_strided
 from .layers import Layer
 
@@ -45,8 +46,13 @@ class MaxPooling2D(Layer):
                              )
         out = np.max(windows, axis=(4, 5))
 
+        maxs = out.repeat(2, axis=2).repeat(2, axis=3)
+        x_window = x[:, :, :out_h * self.stride, :out_w * self.stride]
+        mask = np.equal(x_window, maxs).astype(int)
+
         if is_training:
             self.cache['X'] = x
+            self.cache['mask'] = mask
         return out
 
     def backprop(self, dA_prev):
@@ -56,23 +62,11 @@ class MaxPooling2D(Layer):
         :return: the derivative of the cost layer with respect to the current layer
         """
         x = self.cache['X']
-        n_batch, ch_x, h_x, w_x = x.shape
         h_poolwindow, w_poolwindow = self.pool_size
 
-        dA = np.zeros(shape=x.shape)  # dC/dA --> gradient of the input
-        for n in range(n_batch):
-            for ch in range(ch_x):
-                curr_y = out_y = 0
-                while curr_y + h_poolwindow <= h_x:
-                    curr_x = out_x = 0
-                    while curr_x + w_poolwindow <= w_x:
-                        window_slice = x[n, ch, curr_y:curr_y + h_poolwindow, curr_x:curr_x + w_poolwindow]
-                        i, j = np.unravel_index(np.argmax(window_slice), window_slice.shape)
-                        dA[n, ch, curr_y + i, curr_x + j] = dA_prev[n, ch, out_y, out_x]
-
-                        curr_x += self.stride
-                        out_x += 1
-
-                    curr_y += self.stride
-                    out_y += 1
-        return dA
+        mask = self.cache['mask']
+        dA = dA_prev.repeat(h_poolwindow, axis=2).repeat(w_poolwindow, axis=3)
+        dA = np.multiply(dA, mask)
+        pad = np.zeros(x.shape)
+        pad[:, :, :dA.shape[2], :dA.shape[3]] = dA
+        return pad
