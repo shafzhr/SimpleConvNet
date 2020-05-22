@@ -65,7 +65,7 @@ class Model:
         iteration = 1
         for epoch in range(epochs):
             description = "Epoch #{} :".format(epoch + 1)
-            pbar = tqdm(range(batch_amount))
+            pbar = tqdm(range(batch_amount), position=0, leave=True)
             pbar.set_description(description)
             for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
                 x_pred = x_batch.copy()
