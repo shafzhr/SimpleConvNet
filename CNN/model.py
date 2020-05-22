@@ -87,13 +87,10 @@ class Model:
             iteration += batch_size
 
     def predict(self, batch):
-        predictions = []
-        for X in batch:
-            x_pred = X.copy()
-            for layer in self.layers:
-                x_pred = layer.run(x_pred, is_training=False)
-            predictions.append(x_pred)
-        return predictions
+        x_pred = batch.copy()
+        for layer in self.layers:
+            x_pred = layer.run(x_pred, is_training=False)
+        return x_pred
 
     def evaluate(self, batch, labels):
         predictions = self.predict(batch)
