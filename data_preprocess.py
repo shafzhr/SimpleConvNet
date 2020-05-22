@@ -24,8 +24,7 @@ def load_blur_img(path, img_size):
 def load_img_class(class_path, class_label, class_size, img_size, name):
     x = []
     y = []
-    description = "Loading {} :".format(name)
-    pbar = tqdm(range(class_size))
+    pbar = tqdm(range(class_size), position=0, leave=True)
     pbar.set_description(name)
     for path in class_path:
         img = load_blur_img(path, img_size)
@@ -39,7 +38,7 @@ def load_img_class(class_path, class_label, class_size, img_size, name):
         x.append(img)
         y.append(class_label)
         pbar.update(1)
-
+    print()
     return x, y
 
 
@@ -94,10 +93,10 @@ def to_categorical(labels, num_classes):
 
 def get_data():
     size = 32
-    # class_size = 20000
-    class_size = 1000
-    # rand_state = 42
-    # np.random.seed(rand_state)
+    class_size = 20000
+    # class_size = 1000
+    rand_state = 42
+    np.random.seed(rand_state)
 
     hotdogs = glob.glob('./input/seefood/train/hot_dog/**/*.jpg', recursive=True)
     hotdogs += glob.glob('./input/seefood/test/hot_dog/**/*.jpg', recursive=True)
