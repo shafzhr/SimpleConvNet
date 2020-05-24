@@ -68,7 +68,7 @@ class Flattening(Layer):
         """
         if is_training:
             self.shape = x.shape
-            return x.flatten('K').reshape((x.shape[0], -1)).T
+        return x.flatten('K').reshape((x.shape[0], -1)).T
 
     def backprop(self, dA_prev):
         """
