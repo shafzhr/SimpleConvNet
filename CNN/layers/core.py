@@ -28,7 +28,8 @@ class Dropout(Layer):
         :param is_training:
         :param x: input array
         """
-
+        if not is_training:
+            return x
         pKeep = 1 - self.rate
         weights = np.ones(x.shape)
         noise = np.random.rand(*weights.shape) < pKeep  # !!!
@@ -76,7 +77,7 @@ class Flattening(Layer):
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
-        return dA_prev.reshape(self.shape)
+        return dA_prev.T.reshape(self.shape)
 
 
 class Dense(Layer, Trainable):
