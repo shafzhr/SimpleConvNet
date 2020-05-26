@@ -38,7 +38,7 @@ def load_img_class(class_path, class_label, class_size, img_size, name):
         x.append(img)
         y.append(class_label)
         pbar.update(1)
-    print()
+    pbar.close()
     return x, y
 
 
