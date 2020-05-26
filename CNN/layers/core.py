@@ -68,7 +68,7 @@ class Flattening(Layer):
         """
         if is_training:
             self.shape = x.shape
-        return x.flatten('K').reshape((x.shape[0], -1)).T
+        return x.flatten('K').reshape((x.shape[0], -1))
 
     def backprop(self, dA_prev):
         """
@@ -77,7 +77,7 @@ class Flattening(Layer):
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
-        return dA_prev.T.reshape(self.shape)
+        return dA_prev.reshape(self.shape)
 
 
 class Dense(Layer, Trainable):
@@ -93,7 +93,7 @@ class Dense(Layer, Trainable):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.weights = None
-        self.bias = self.initialize_bias((units, 1))
+        self.bias = self.initialize_bias((units,))
         self.cache = {}
         self.grads = {}
 
@@ -111,13 +111,14 @@ class Dense(Layer, Trainable):
 
     def run(self, x, is_training=True):
         if self.weights is None:
-            self.weights = self.initialize_weights((self.units, x.shape[0]))
+            self.weights = self.initialize_weights((x.shape[1], self.units))
             self.grads = self._init_bias_weight_like()
 
         if is_training:
             self.cache['X'] = x
 
-        x = np.dot(self.weights, x) + self.bias
+        x = np.matmul(x, self.weights)
+        x += self.bias.reshape(1, -1)
         return self.activation.apply(x, is_training)
 
     def backprop(self, dA_prev):
@@ -127,9 +128,9 @@ class Dense(Layer, Trainable):
         """
         dA_prev = self.activation.backprop(dA_prev)
         x = self.cache['X']
-        self.grads['dW'] += np.dot(dA_prev, x.transpose())
-        self.grads['dB'] += np.sum(dA_prev, axis=1).reshape((-1, 1))
-        return np.dot(self.weights.transpose(), dA_prev)
+        self.grads['dW'] += np.matmul(x.transpose(), dA_prev)
+        self.grads['dB'] += np.sum(dA_prev, axis=0)
+        return np.matmul(dA_prev, self.weights.transpose())
 
     def _init_bias_weight_like(self):
         d = {'dW': np.zeros_like(self.weights), 'dB': np.zeros_like(self.bias)}
