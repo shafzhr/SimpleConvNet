@@ -37,7 +37,7 @@ class ConvLayer(Layer, Trainable):
         self.filter_initializer = filter_initializer
         self.filters = None
         self.bias_initializer = bias_initializer
-        self.bias = self.initialize_bias((filters_amount, 1))
+        self.bias = self.initialize_bias((filters_amount,))
         self.cache = {}
         self.grads = {}
 
@@ -88,8 +88,8 @@ class ConvLayer(Layer, Trainable):
         out = np.tensordot(sub_windows, self.filters, axes=[(3, 4, 5), (1, 2, 3)])
         out = out.transpose((0, 3, 1, 2))
 
-        for b in self.bias:
-            out += b
+        for i, b in enumerate(self.bias):
+            out[:, i] += b
 
         out = self.activation.apply(out, is_training)
         return out
