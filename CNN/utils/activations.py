@@ -77,7 +77,7 @@ class Softmax(Activation):
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
-        return dA_prev * (self.X * (1 - self.X))
+        return dA_prev
 
 
 ACTIVATION_FUNCTIONS = {'relu': ReLU, 'softmax': Softmax}

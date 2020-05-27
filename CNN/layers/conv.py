@@ -13,8 +13,8 @@ from ..utils.activations import ACTIVATION_FUNCTIONS
 class ConvLayer(Layer, Trainable):
     """Convolutional layer"""
 
-    def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: str, stride: int, **kw):
+    def __init__(self, filters_amount: int, filter_size: Tuple[int, int], activation: str, filter_initializer: str,
+                 bias_initializer: str, stride: int, use_bias: bool, **kw):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal (height, width)
@@ -40,6 +40,7 @@ class ConvLayer(Layer, Trainable):
         self.bias = self.initialize_bias((filters_amount,))
         self.cache = {}
         self.grads = {}
+        self.use_bias = use_bias
 
     def initialize_weights(self, shape):
         """
@@ -88,8 +89,9 @@ class ConvLayer(Layer, Trainable):
         out = np.tensordot(sub_windows, self.filters, axes=[(3, 4, 5), (1, 2, 3)])
         out = out.transpose((0, 3, 1, 2))
 
-        for i, b in enumerate(self.bias):
-            out[:, i] += b
+        if self.use_bias:
+            for i, b in enumerate(self.bias):
+                out[:, i] += b
 
         out = self.activation.apply(out, is_training)
         return out
@@ -113,8 +115,7 @@ class ConvLayer(Layer, Trainable):
         n_bathc, ch_img, h, w = x.shape
         _, dA_ch, dA_h, dA_w = dA_prev.shape
 
-        dB = np.zeros(shape=self.bias.shape)  # dC/dB --> gradient of the biases
-        dB += np.sum(dA_prev)
+        dB = np.sum(dA_prev, axis=(0, 2, 3))  # dC/dB --> gradient of the biases
 
         as_strided = np.lib.stride_tricks.as_strided
 
@@ -201,8 +202,8 @@ class ConvLayer(Layer, Trainable):
 class Conv2D(ConvLayer):
     """2D Convolutional layer"""
 
-    def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: str, stride: int):
+    def __init__(self, filters_amount: int, filter_size: Tuple[int, int], activation: str, filter_initializer: str,
+                 bias_initializer: str, stride: int, use_bias: bool = True):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal
@@ -217,4 +218,5 @@ class Conv2D(ConvLayer):
                          stride=stride,
                          filter_initializer=filter_initializer,
                          bias_initializer=bias_initializer,
+                         use_bias=use_bias
                          )
