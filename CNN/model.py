@@ -6,7 +6,6 @@ from typing import (
 from CNN.layers.layers import Layer, Trainable
 from CNN.utils.data import get_batches
 from tqdm import tqdm
-import time
 
 
 def evaluate(output, target):
@@ -58,6 +57,7 @@ class Model:
         if len(data) != 4:
             raise ValueError("data must be a Tuple of 4 lists")
         X_train, X_test, y_train, y_test = data
+
         assert len(X_train) == len(y_train)
         assert len(X_test) == len(y_test)
 
@@ -67,10 +67,11 @@ class Model:
             description = "Epoch #{} :".format(epoch + 1)
             pbar = tqdm(range(batch_amount), position=0, leave=True)
             pbar.set_description(description)
+            training_acc = 0
             for x_batch, y_batch in get_batches(X_train, y_train, batch_size):
-                x_pred = x_batch.copy()
-                for layer in self.layers:
-                    x_pred = layer.run(x_pred)
+                x_pred = self.predict(x_batch, True)
+
+                training_acc += evaluate(x_pred, y_batch)
 
                 dA = self.loss.calc_derivative(x_pred, y_batch)
 
@@ -79,19 +80,20 @@ class Model:
 
                 for layer in self.layers:
                     if isinstance(layer, Trainable):
-                        layer.update_params('adam', batch_size, **optimizer_params, t=iteration)
+                        layer.update_params(optimizer, batch_size, **optimizer_params, t=iteration)
 
+                iteration += 1
                 pbar.update(1)
+            pbar.close()
+            print("\nEpoch {} : {}%".format(epoch + 1, self.evaluate(X_test, y_test) * 100))
+            print("Training: {}%\n".format(training_acc/batch_amount*100))
 
-            print("Epoch {} : {}%".format(epoch, self.evaluate(X_test, y_test) * 100))
-            iteration += batch_size
-
-    def predict(self, batch):
+    def predict(self, batch, is_training):
         x_pred = batch.copy()
         for layer in self.layers:
-            x_pred = layer.run(x_pred, is_training=False)
+            x_pred = layer.run(x_pred, is_training=is_training)
         return x_pred
 
     def evaluate(self, batch, labels):
-        predictions = self.predict(batch)
+        predictions = self.predict(batch, False)
         return evaluate(predictions, labels)

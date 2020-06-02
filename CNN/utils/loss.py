@@ -27,4 +27,4 @@ class CategoricalCrossEntropy:
         :param target: training labels
         :return: the derivative of the loss functions
         """
-        return target - output
+        return output - target

@@ -16,7 +16,8 @@ class Dropout(Layer):
         """
         :param rate: drop rate
         """
-        if not 0 < rate < 1:
+
+        if not 0 <= rate < 1:
             raise ValueError("rate has to be between 0 and 1")
 
         self.rate = rate
@@ -28,7 +29,8 @@ class Dropout(Layer):
         :param is_training:
         :param x: input array
         """
-
+        if not is_training or self.rate == 0:
+            return x
         pKeep = 1 - self.rate
         weights = np.ones(x.shape)
         noise = np.random.rand(*weights.shape) < pKeep  # !!!
@@ -47,6 +49,8 @@ class Dropout(Layer):
         :param dA_prev: derivative of the cost function with respect to the previous layer(when going backwards)
         :return: the derivative of the cost layer with respect to the current layer
         """
+        if self.rate == 0:
+            return dA_prev
         dA = dA_prev * self.noise
         return dA / (1 - self.rate)
 
@@ -67,7 +71,7 @@ class Flattening(Layer):
         """
         if is_training:
             self.shape = x.shape
-        return x.flatten().reshape((x.shape[0], -1)).T
+        return x.flatten('K').reshape((x.shape[0], -1))
 
     def backprop(self, dA_prev):
         """
@@ -82,7 +86,8 @@ class Flattening(Layer):
 class Dense(Layer, Trainable):
     """Regular fully connected layer"""
 
-    def __init__(self, units: int, activation: str, weight_initializer: str, bias_initializer: str):
+    def __init__(self, units: int, activation: str, weight_initializer: str, bias_initializer: str,
+                 use_bias: bool = True):
 
         if activation not in ACTIVATION_FUNCTIONS.keys():
             raise ValueError("Activation name has to be in {}".format(str(ACTIVATION_FUNCTIONS.keys())))
@@ -92,9 +97,10 @@ class Dense(Layer, Trainable):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.weights = None
-        self.bias = self.initialize_bias((units, 1))
+        self.bias = self.initialize_bias((units,))
         self.cache = {}
         self.grads = {}
+        self.use_bias = use_bias
 
     def initialize_weights(self, shape):
         if self.weight_initializer not in WEIGHT_FUNCTIONS.keys():
@@ -110,13 +116,15 @@ class Dense(Layer, Trainable):
 
     def run(self, x, is_training=True):
         if self.weights is None:
-            self.weights = self.initialize_weights((self.units, x.shape[0]))
+            self.weights = self.initialize_weights((x.shape[1], self.units))
             self.grads = self._init_bias_weight_like()
 
         if is_training:
             self.cache['X'] = x
 
-        x = np.dot(self.weights, x) + self.bias
+        x = np.matmul(x, self.weights)
+        if self.use_bias:
+            x += self.bias.reshape(1, -1)
         return self.activation.apply(x, is_training)
 
     def backprop(self, dA_prev):
@@ -126,9 +134,9 @@ class Dense(Layer, Trainable):
         """
         dA_prev = self.activation.backprop(dA_prev)
         x = self.cache['X']
-        self.grads['dW'] += np.dot(dA_prev, x.transpose())
-        self.grads['dB'] += np.sum(dA_prev, axis=1).reshape((-1, 1))
-        return np.dot(self.weights.transpose(), dA_prev)
+        self.grads['dW'] += np.matmul(x.transpose(), dA_prev)
+        self.grads['dB'] += np.sum(dA_prev, axis=0)
+        return np.matmul(dA_prev, self.weights.transpose())
 
     def _init_bias_weight_like(self):
         d = {'dW': np.zeros_like(self.weights), 'dB': np.zeros_like(self.bias)}
@@ -141,8 +149,8 @@ class Dense(Layer, Trainable):
         """
         if 'momentum' not in self.grads.keys():
             self.grads['momentum'] = self._init_bias_weight_like()
-        self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1-beta) * self.grads['dW']
-        self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1-beta) * self.grads['dB']
+        self.grads['momentum']['dW'] = beta * self.grads['momentum']['dW'] + (1 - beta) * self.grads['dW']
+        self.grads['momentum']['dB'] = beta * self.grads['momentum']['dB'] + (1 - beta) * self.grads['dB']
 
     def _calc_rmsprop(self, beta):
         """
@@ -151,8 +159,8 @@ class Dense(Layer, Trainable):
         """
         if 'rmsprop' not in self.grads.keys():
             self.grads['rmsprop'] = self._init_bias_weight_like()
-        self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1-beta) * np.power(self.grads['dW'], 2)
-        self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1-beta) * np.power(self.grads['dB'], 2)
+        self.grads['rmsprop']['dW'] = beta * self.grads['rmsprop']['dW'] + (1 - beta) * np.power(self.grads['dW'], 2)
+        self.grads['rmsprop']['dB'] = beta * self.grads['rmsprop']['dB'] + (1 - beta) * np.power(self.grads['dB'], 2)
 
     def update_params(self, optimizer, batch_size, **kwarg):
         """

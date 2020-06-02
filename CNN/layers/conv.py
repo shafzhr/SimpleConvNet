@@ -13,8 +13,8 @@ from ..utils.activations import ACTIVATION_FUNCTIONS
 class ConvLayer(Layer, Trainable):
     """Convolutional layer"""
 
-    def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: str, stride: int, **kw):
+    def __init__(self, filters_amount: int, filter_size: Tuple[int, int], activation: str, filter_initializer: str,
+                 bias_initializer: str, stride: int, use_bias: bool, **kw):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal (height, width)
@@ -35,11 +35,12 @@ class ConvLayer(Layer, Trainable):
         self.activation = ACTIVATION_FUNCTIONS[activation]()
         self.stride = stride
         self.filter_initializer = filter_initializer
-        self.filters = None
+        self.weights = None
         self.bias_initializer = bias_initializer
-        self.bias = self.initialize_bias((filters_amount, 1))
+        self.bias = self.initialize_bias((filters_amount,))
         self.cache = {}
         self.grads = {}
+        self.use_bias = use_bias
 
     def initialize_weights(self, shape):
         """
@@ -64,14 +65,14 @@ class ConvLayer(Layer, Trainable):
 
     def run(self, x, is_training=True):
         """Convolves the filters over 'x' """
-        if self.filters is None:
-            self.filters = self.initialize_weights((self.units, x.shape[1], *self.filter_size))
+        if self.weights is None:
+            self.weights = self.initialize_weights((self.units, x.shape[1], *self.filter_size))
             self.grads = self._init_bias_weight_like()
 
         if is_training:
             self.cache['X'] = x
 
-        n_filt, ch_filt, h_filt, w_filt = self.filters.shape
+        n_filt, ch_filt, h_filt, w_filt = self.weights.shape
         n_batch, ch, h, w = x.shape
 
         if ch_filt != ch:
@@ -85,11 +86,12 @@ class ConvLayer(Layer, Trainable):
                                                        x.strides[3] * self.stride, x.strides[1],
                                                        x.strides[2], x.strides[3])
                                                       )
-        out = np.tensordot(sub_windows, self.filters, axes=[(3, 4, 5), (1, 2, 3)])
+        out = np.tensordot(sub_windows, self.weights, axes=[(3, 4, 5), (1, 2, 3)])
         out = out.transpose((0, 3, 1, 2))
 
-        for b in self.bias:
-            out += b
+        if self.use_bias:
+            for i, b in enumerate(self.bias):
+                out[:, i] += b
 
         out = self.activation.apply(out, is_training)
         return out
@@ -109,12 +111,11 @@ class ConvLayer(Layer, Trainable):
 
         x = self.cache['X']
 
-        n_filt, ch_filt, h_filt, w_filt = self.filters.shape
+        n_filt, ch_filt, h_filt, w_filt = self.weights.shape
         n_bathc, ch_img, h, w = x.shape
         _, dA_ch, dA_h, dA_w = dA_prev.shape
 
-        dB = np.zeros(shape=self.bias.shape)  # dC/dB --> gradient of the biases
-        dB += np.sum(dA_prev)
+        dB = np.sum(dA_prev, axis=(0, 2, 3))  # dC/dB --> gradient of the biases
 
         as_strided = np.lib.stride_tricks.as_strided
 
@@ -130,7 +131,7 @@ class ConvLayer(Layer, Trainable):
 
         pad_h = dA_h - 1
         pad_w = dA_w - 1
-        pad_filt = np.pad(self.filters, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), 'constant')
+        pad_filt = np.pad(self.weights, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), 'constant')
         sub_windows = as_strided(pad_filt,
                                  shape=(n_filt, h, w, dA_h, dA_w, ch_filt),
                                  strides=(pad_filt.strides[0], pad_filt.strides[2],
@@ -146,7 +147,7 @@ class ConvLayer(Layer, Trainable):
         return dA
 
     def _init_bias_weight_like(self):
-        d = {'dW': np.zeros_like(self.filters), 'dB': np.zeros_like(self.bias)}
+        d = {'dW': np.zeros_like(self.weights), 'dB': np.zeros_like(self.bias)}
         return d
 
     def _calc_momentum(self, beta):
@@ -191,7 +192,7 @@ class ConvLayer(Layer, Trainable):
             w_v_hat = self.grads['rmsprop']['dW'] / (1 - np.power(kwarg['beta2'], kwarg['t']))
             b_v_hat = self.grads['rmsprop']['dB'] / (1 - np.power(kwarg['beta2'], kwarg['t']))
 
-            self.filters -= kwarg['lr'] * w_m_hat / (np.sqrt(w_v_hat) + kwarg['epsilon'])
+            self.weights -= kwarg['lr'] * w_m_hat / (np.sqrt(w_v_hat) + kwarg['epsilon'])
             self.bias -= kwarg['lr'] * b_m_hat / (np.sqrt(b_v_hat) + kwarg['epsilon'])
 
         self.grads['dW'].fill(0)
@@ -201,8 +202,8 @@ class ConvLayer(Layer, Trainable):
 class Conv2D(ConvLayer):
     """2D Convolutional layer"""
 
-    def __init__(self, filters_amount: int, filter_size: Tuple[int], activation: str, filter_initializer: str,
-                 bias_initializer: str, stride: int):
+    def __init__(self, filters_amount: int, filter_size: Tuple[int, int], activation: str, filter_initializer: str,
+                 bias_initializer: str, stride: int, use_bias: bool = True):
         """
         :param filters_amount: layer's amount of filters
         :param filter_size: the size of the kernal
@@ -217,4 +218,5 @@ class Conv2D(ConvLayer):
                          stride=stride,
                          filter_initializer=filter_initializer,
                          bias_initializer=bias_initializer,
+                         use_bias=use_bias
                          )
